@@ -24,3 +24,23 @@ from startup_sim import simulate, DEFAULT_PARAMS
 result = simulate(**DEFAULT_PARAMS, seed=7)
 print(result["trajectory"][-1])
 ```
+
+## Visualization
+
+Static views are available through matplotlib:
+
+```bash
+python -m startup_sim.plot_demo
+```
+
+An interactive Plotly/Dash explorer is available here:
+
+```bash
+python -m startup_sim.interactive_plot
+```
+
+Additional visualization requirements:
+
+- `matplotlib`
+- `plotly`
+- `dash`
