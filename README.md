@@ -1,6 +1,6 @@
 # startup_sim
 
-`startup_sim` simulates startup customer growth under stochastic Bass-style adoption with cash dynamics and ruin detection.
+`startup_sim` simulates startup customer growth under stochastic adoption, latent virality, cash dynamics, and ruin detection.
 
 ## Requirements
 
@@ -27,10 +27,11 @@ print(result["trajectory"][-1])
 
 ## Visualization
 
-Static views are available through matplotlib:
+Static views are available through both matplotlib and Plotly:
 
 ```bash
-python -m startup_sim.plot_demo
+python -m startup_sim.plot_demo --engine matplotlib
+python -m startup_sim.plot_demo --engine plotly
 ```
 
 An interactive Plotly/Dash explorer is available here:
