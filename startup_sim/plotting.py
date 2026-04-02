@@ -13,6 +13,8 @@ SERIES_COLORS: dict[str, str] = {
     "monthly revenue": "#d97706",
     "acquired": "#059669",
     "lost": "#dc2626",
+    "churned": "#7c3aed",
+    "q": "#2563eb",
 }
 
 
@@ -87,7 +89,7 @@ def _panel_data(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     cash_scale, cash_unit = _money_scale(np.concatenate(cash_runs_raw))
     revenue_scale, revenue_unit = _money_scale(np.concatenate(revenue_runs_raw))
 
-    return [
+    panels = [
         {
             "title": "customers",
             "unit": "",
@@ -112,10 +114,21 @@ def _panel_data(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "series": [
                 {"label": "acquired", "runs": acquired_runs},
                 {"label": "lost", "runs": lost_runs},
+                {"label": "churned", "runs": [run[:, 2] for run in raw_runs]},
             ],
             "reference": None,
         },
     ]
+
+    panels.append(
+        {
+            "title": "latent q",
+            "unit": "",
+            "series": [{"label": "q", "runs": [run[:, 6] for run in raw_runs]}],
+            "reference": None,
+        }
+    )
+    return panels
 
 
 def _line_alpha(n_runs: int) -> float:
@@ -267,6 +280,26 @@ def build_plotly_figure(
     figure.update_yaxes(showgrid=True, gridcolor="#efe8dc", zerolinecolor="#d4c3b0")
     figure.update_annotations(font={"size": 16, "color": "#6b4f2d"})
     return figure
+
+
+def plot_with_plotly(result: dict[str, Any], title: str | None = None) -> None:
+    """Display a Plotly visualization for one run.
+
+    Parameters
+    ----------
+    result : dict of str to Any
+        Simulation output.
+    title : str or None, default=None
+        Optional figure title.
+
+    Returns
+    -------
+    None
+        Opens the Plotly figure.
+    """
+
+    build_plotly_figure([result], title=title).show()
+
 
 def plot_with_matplotlib(result: dict[str, Any], title: str | None = None) -> None:
     """Display a matplotlib visualization for one run.

@@ -5,6 +5,7 @@ __all__ = [
     "simulate",
     "batch_simulate",
     "plot_with_matplotlib",
+    "plot_with_plotly",
     "build_plotly_figure",
     "launch_interactive_explorer",
 ]
@@ -29,6 +30,27 @@ def plot_with_matplotlib(*args, **kwargs):
     from startup_sim.plotting import plot_with_matplotlib as _plot_with_matplotlib
 
     return _plot_with_matplotlib(*args, **kwargs)
+
+
+def plot_with_plotly(*args, **kwargs):
+    """Dispatch to the Plotly visualizer.
+
+    Parameters
+    ----------
+    *args : Any
+        Positional arguments forwarded to the visualizer.
+    **kwargs : Any
+        Keyword arguments forwarded to the visualizer.
+
+    Returns
+    -------
+    None
+        Displays the Plotly figure.
+    """
+
+    from startup_sim.plotting import plot_with_plotly as _plot_with_plotly
+
+    return _plot_with_plotly(*args, **kwargs)
 
 
 def build_plotly_figure(*args, **kwargs):

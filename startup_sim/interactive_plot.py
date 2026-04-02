@@ -45,10 +45,15 @@ class ControlSpec:
 CONTROL_SPECS: list[ControlSpec] = [
     ControlSpec("p", "p", -1.0, 1.0, float(DEFAULT_PARAMS["p"]), 0.01, float),
     ControlSpec("q", "q", -1.0, 1.0, float(DEFAULT_PARAMS["q"]), 0.01, float),
+    ControlSpec("kappa", "kappa", 0.0, 5.0, float(DEFAULT_PARAMS["kappa"]), 0.05, float),
+    ControlSpec("sigma_q", "sigma_q", 0.0, 0.5, float(DEFAULT_PARAMS["sigma_q"]), 0.005, float),
     ControlSpec("K", "K", 5_000.0, 100_000.0, float(DEFAULT_PARAMS["K"]), 500.0, float),
     ControlSpec("v", "v", 10.0, 250.0, float(DEFAULT_PARAMS["v"]), 1.0, float),
+    ControlSpec("epsilon", "epsilon", 0.0, 0.95, float(DEFAULT_PARAMS["epsilon"]), 0.01, float),
+    ControlSpec("chi", "chi", 0.0, 2.0, float(DEFAULT_PARAMS["chi"]), 0.01, float),
     ControlSpec("gamma", "gamma", 0.0, 200.0, float(DEFAULT_PARAMS["gamma"]), 1.0, float),
     ControlSpec("b0", "b0", 0.0, 250_000.0, float(DEFAULT_PARAMS["b0"]), 1_000.0, float),
+    ControlSpec("alpha", "alpha", 0.0, 1_000.0, float(DEFAULT_PARAMS["alpha"]), 10.0, float),
     ControlSpec("sigma_N", "sigma_N", 0.0, 50.0, float(DEFAULT_PARAMS["sigma_N"]), 0.5, float),
     ControlSpec("N0", "N0", 0.0, 10_000.0, float(DEFAULT_PARAMS["N0"]), 10.0, float),
     ControlSpec("C0", "C0", 0.0, 10_000_000.0, float(DEFAULT_PARAMS["C0"]), 50_000.0, float),
@@ -149,28 +154,26 @@ def _params_from_controls(controls: dict[str, Any]) -> tuple[dict[str, Any], str
         Simulator parameters and an optional note.
     """
 
-    v = float(controls["v"])
-    gamma = float(controls["gamma"])
-    delta = max(v - gamma, 1.0e-6)
-    note: str | None = None
-    if gamma >= v:
-        note = "gamma >= v, so net unit margin was clipped to a small positive value."
-
     return (
         {
             "p": float(controls["p"]),
             "q": float(controls["q"]),
+            "kappa": float(controls["kappa"]),
+            "sigma_q": float(controls["sigma_q"]),
             "K": float(controls["K"]),
-            "v": v,
-            "gamma": float(gamma),
+            "v": float(controls["v"]),
+            "epsilon": float(controls["epsilon"]),
+            "chi": float(controls["chi"]),
+            "gamma": float(controls["gamma"]),
             "b0": float(controls["b0"]),
+            "alpha": float(controls["alpha"]),
             "sigma_N": float(controls["sigma_N"]),
             "N0": float(controls["N0"]),
             "C0": float(controls["C0"]),
             "T": int(controls["T"]),
             "dt": float(controls["dt"]),
         },
-        note,
+        None,
     )
 
 
