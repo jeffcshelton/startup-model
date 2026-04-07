@@ -7,6 +7,8 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from startup_sim.model import normalize_model_name
+
 SERIES_COLORS: dict[str, str] = {
     "customers": "#0f766e",
     "cash": "#0b3c5d",
@@ -19,18 +21,7 @@ SERIES_COLORS: dict[str, str] = {
 
 
 def _money_scale(values: np.ndarray) -> tuple[float, str]:
-    """Choose a display scale for money-valued series.
-
-    Parameters
-    ----------
-    values : numpy.ndarray
-        Values to scale.
-
-    Returns
-    -------
-    tuple of float and str
-        Scale factor and unit label.
-    """
+    """Choose a display scale for money-valued series."""
 
     max_abs = float(np.max(np.abs(values))) if values.size else 0.0
     if max_abs >= 1_000_000.0:
@@ -41,36 +32,35 @@ def _money_scale(values: np.ndarray) -> tuple[float, str]:
 
 
 def _realized_flows(customers: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Compute realized customer gains and losses.
-
-    Parameters
-    ----------
-    customers : numpy.ndarray
-        Customer trajectory.
-
-    Returns
-    -------
-    tuple of numpy.ndarray and numpy.ndarray
-        Acquired and lost customer counts.
-    """
+    """Compute realized customer gains and losses."""
 
     delta_customers = np.diff(customers, prepend=customers[0])
     return np.maximum(delta_customers, 0.0), np.maximum(-delta_customers, 0.0)
 
 
+def _model_name(result: dict[str, Any]) -> str:
+    """Infer the model name for a simulation result."""
+
+    if "model" in result:
+        return normalize_model_name(result["model"])
+
+    trajectory = np.asarray(result["trajectory"], dtype=np.float64)
+    if trajectory.shape[1] == 6:
+        return "baseline"
+    if trajectory.shape[1] == 7:
+        return "advanced"
+    raise ValueError("unsupported trajectory shape for plotting.")
+
+
 def _panel_data(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Build panel data shared by matplotlib and Plotly rendering.
+    """Build panel data shared by matplotlib and Plotly rendering."""
 
-    Parameters
-    ----------
-    results : list of dict of str to Any
-        Simulation results from the same model.
+    if not results:
+        raise ValueError("results must not be empty.")
 
-    Returns
-    -------
-    list of dict of str to Any
-        Plot panel specifications.
-    """
+    model = _model_name(results[0])
+    if any(_model_name(result) != model for result in results[1:]):
+        raise ValueError("all plotted results must come from the same model.")
 
     raw_runs = [np.asarray(result["trajectory"], dtype=np.float64) for result in results]
     dt = float(results[0]["params"]["dt"])
@@ -114,36 +104,27 @@ def _panel_data(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "series": [
                 {"label": "acquired", "runs": acquired_runs},
                 {"label": "lost", "runs": lost_runs},
-                {"label": "churned", "runs": [run[:, 2] for run in raw_runs]},
             ],
             "reference": None,
         },
     ]
 
-    panels.append(
-        {
-            "title": "latent q",
-            "unit": "",
-            "series": [{"label": "q", "runs": [run[:, 6] for run in raw_runs]}],
-            "reference": None,
-        }
-    )
+    if model == "advanced":
+        panels[3]["series"].append({"label": "churned", "runs": [run[:, 2] for run in raw_runs]})
+        panels.append(
+            {
+                "title": "latent q",
+                "unit": "",
+                "series": [{"label": "q", "runs": [run[:, 6] for run in raw_runs]}],
+                "reference": None,
+            }
+        )
+
     return panels
 
 
 def _line_alpha(n_runs: int) -> float:
-    """Choose an overlay alpha value.
-
-    Parameters
-    ----------
-    n_runs : int
-        Number of runs being overlaid.
-
-    Returns
-    -------
-    float
-        Alpha channel value.
-    """
+    """Choose an overlay alpha value."""
 
     if n_runs <= 1:
         return 0.85
@@ -155,22 +136,7 @@ def build_plotly_figure(
     title: str | None = None,
     note: str | None = None,
 ) -> go.Figure:
-    """Build a Plotly figure from one or more simulation runs.
-
-    Parameters
-    ----------
-    results : list of dict of str to Any
-        Simulation outputs to visualize.
-    title : str or None, default=None
-        Optional figure title.
-    note : str or None, default=None
-        Optional subtitle note.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-        Plotly figure with all runs overlaid.
-    """
+    """Build a Plotly figure from one or more simulation runs."""
 
     if not results:
         raise ValueError("results must not be empty.")
@@ -283,48 +249,28 @@ def build_plotly_figure(
 
 
 def plot_with_plotly(result: dict[str, Any], title: str | None = None) -> None:
-    """Display a Plotly visualization for one run.
-
-    Parameters
-    ----------
-    result : dict of str to Any
-        Simulation output.
-    title : str or None, default=None
-        Optional figure title.
-
-    Returns
-    -------
-    None
-        Opens the Plotly figure.
-    """
+    """Display a Plotly visualization for one run."""
 
     build_plotly_figure([result], title=title).show()
 
 
 def plot_with_matplotlib(result: dict[str, Any], title: str | None = None) -> None:
-    """Display a matplotlib visualization for one run.
-
-    Parameters
-    ----------
-    result : dict of str to Any
-        Simulation output.
-    title : str or None, default=None
-        Optional figure title.
-
-    Returns
-    -------
-    None
-        Opens the matplotlib figure.
-    """
+    """Display a matplotlib visualization for one run."""
 
     panels = _panel_data([result])
     time_axis = np.arange(len(result["trajectory"]), dtype=np.float64) * float(result["params"]["dt"])
     figure, axes = plt.subplots(len(panels), 1, figsize=(10.0, 3.0 * len(panels)), sharex=True)
     axes_array = np.atleast_1d(axes)
 
-    for axis, panel in zip(axes_array, panels):
+    for axis, panel in zip(axes_array, panels, strict=True):
         for series in panel["series"]:
-            axis.plot(time_axis, series["runs"][0], linewidth=2.0, label=series["label"], color=SERIES_COLORS[series["label"]])
+            axis.plot(
+                time_axis,
+                series["runs"][0],
+                linewidth=2.0,
+                label=series["label"],
+                color=SERIES_COLORS[series["label"]],
+            )
 
         if panel["reference"] is not None:
             label, value = panel["reference"]
@@ -347,20 +293,7 @@ def plot_with_matplotlib(result: dict[str, Any], title: str | None = None) -> No
 
 
 def _hex_to_rgba(hex_color: str, alpha: float) -> str:
-    """Convert a hex color to an rgba string.
-
-    Parameters
-    ----------
-    hex_color : str
-        Color in ``#RRGGBB`` form.
-    alpha : float
-        Alpha channel value.
-
-    Returns
-    -------
-    str
-        CSS-style rgba string.
-    """
+    """Convert a hex color to an rgba string."""
 
     stripped = hex_color.lstrip("#")
     red = int(stripped[0:2], 16)

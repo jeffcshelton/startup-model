@@ -6,32 +6,17 @@ from typing import Any, Callable
 
 import numpy as np
 from dash import Dash, Input, Output, dcc, html
+import plotly.graph_objects as go
 
-from startup_sim.model import DEFAULT_PARAMS, batch_simulate
+import startup_sim.advanced as advanced_model
+import startup_sim.baseline as baseline_model
+from startup_sim.model import DEFAULT_MODEL, MODEL_NAMES, get_default_params, normalize_model_name
 from startup_sim.plotting import build_plotly_figure
 
 
 @dataclass(frozen=True)
 class ControlSpec:
-    """Slider metadata for the interactive explorer.
-
-    Parameters
-    ----------
-    name : str
-        Parameter name.
-    label : str
-        User-facing label.
-    minimum : float
-        Minimum slider value.
-    maximum : float
-        Maximum slider value.
-    value : float
-        Initial slider value.
-    step : float
-        Slider step size.
-    cast : callable
-        Function used to cast the raw slider value.
-    """
+    """Slider metadata for the interactive explorer."""
 
     name: str
     label: str
@@ -42,41 +27,45 @@ class ControlSpec:
     cast: Callable[[float], Any]
 
 
-CONTROL_SPECS: list[ControlSpec] = [
-    ControlSpec("p", "p", -1.0, 1.0, float(DEFAULT_PARAMS["p"]), 0.01, float),
-    ControlSpec("q", "q", -1.0, 1.0, float(DEFAULT_PARAMS["q"]), 0.01, float),
-    ControlSpec("kappa", "kappa", 0.0, 5.0, float(DEFAULT_PARAMS["kappa"]), 0.05, float),
-    ControlSpec("sigma_q", "sigma_q", 0.0, 0.5, float(DEFAULT_PARAMS["sigma_q"]), 0.005, float),
-    ControlSpec("K", "K", 5_000.0, 100_000.0, float(DEFAULT_PARAMS["K"]), 500.0, float),
-    ControlSpec("v", "v", 10.0, 250.0, float(DEFAULT_PARAMS["v"]), 1.0, float),
-    ControlSpec("epsilon", "epsilon", 0.0, 0.95, float(DEFAULT_PARAMS["epsilon"]), 0.01, float),
-    ControlSpec("chi", "chi", 0.0, 2.0, float(DEFAULT_PARAMS["chi"]), 0.01, float),
-    ControlSpec("gamma", "gamma", 0.0, 200.0, float(DEFAULT_PARAMS["gamma"]), 1.0, float),
-    ControlSpec("b0", "b0", 0.0, 250_000.0, float(DEFAULT_PARAMS["b0"]), 1_000.0, float),
-    ControlSpec("alpha", "alpha", 0.0, 1_000.0, float(DEFAULT_PARAMS["alpha"]), 10.0, float),
-    ControlSpec("sigma_N", "sigma_N", 0.0, 50.0, float(DEFAULT_PARAMS["sigma_N"]), 0.5, float),
-    ControlSpec("N0", "N0", 0.0, 10_000.0, float(DEFAULT_PARAMS["N0"]), 10.0, float),
-    ControlSpec("C0", "C0", 0.0, 10_000_000.0, float(DEFAULT_PARAMS["C0"]), 50_000.0, float),
-    ControlSpec("T", "T", 12.0, 240.0, float(DEFAULT_PARAMS["T"]), 1.0, int),
-    ControlSpec("dt", "dt", 1.0 / 24.0, 0.5, float(DEFAULT_PARAMS["dt"]), 1.0 / 120.0, float),
-    ControlSpec("iterations", "iterations", 1.0, 100.0, 20.0, 1.0, int),
-    ControlSpec("seed", "seed", 0.0, 10_000.0, 7.0, 1.0, int),
-]
+def _make_control_specs(model: str) -> list[ControlSpec]:
+    """Build slider metadata for the requested model."""
+
+    defaults = get_default_params(model)
+    common = [
+        ControlSpec("p", "p", -1.0, 1.0, float(defaults["p"]), 0.01, float),
+        ControlSpec("q", "q", -1.0, 1.0, float(defaults["q"]), 0.01, float),
+        ControlSpec("K", "K", 5_000.0, 100_000.0, float(defaults["K"]), 500.0, float),
+        ControlSpec("v", "v", 10.0, 250.0, float(defaults["v"]), 1.0, float),
+        ControlSpec("gamma", "gamma", 0.0, 200.0, float(defaults["gamma"]), 1.0, float),
+        ControlSpec("b0", "b0", 0.0, 250_000.0, float(defaults["b0"]), 1_000.0, float),
+        ControlSpec("sigma_N", "sigma_N", 0.0, 50.0, float(defaults["sigma_N"]), 0.5, float),
+        ControlSpec("N0", "N0", 0.0, 10_000.0, float(defaults["N0"]), 10.0, float),
+        ControlSpec("C0", "C0", 0.0, 10_000_000.0, float(defaults["C0"]), 50_000.0, float),
+        ControlSpec("T", "T", 12.0, 240.0, float(defaults["T"]), 1.0, int),
+        ControlSpec("dt", "dt", 1.0 / 24.0, 0.5, float(defaults["dt"]), 1.0 / 120.0, float),
+    ]
+    if model == "advanced":
+        common[2:2] = [
+            ControlSpec("kappa", "kappa", 0.0, 5.0, float(defaults["kappa"]), 0.05, float),
+            ControlSpec("sigma_q", "sigma_q", 0.0, 0.5, float(defaults["sigma_q"]), 0.005, float),
+        ]
+        common[5:5] = [
+            ControlSpec("epsilon", "epsilon", 0.0, 0.95, float(defaults["epsilon"]), 0.01, float),
+            ControlSpec("chi", "chi", 0.0, 2.0, float(defaults["chi"]), 0.01, float),
+        ]
+        common.insert(9, ControlSpec("alpha", "alpha", 0.0, 1_000.0, float(defaults["alpha"]), 10.0, float))
+
+    common.extend(
+        [
+            ControlSpec("iterations", "iterations", 1.0, 100.0, 20.0, 1.0, int),
+            ControlSpec("seed", "seed", 0.0, 10_000.0, 7.0, 1.0, int),
+        ]
+    )
+    return common
 
 
 def _format_mark_value(value: float) -> str:
-    """Format a compact slider mark label.
-
-    Parameters
-    ----------
-    value : float
-        Mark value.
-
-    Returns
-    -------
-    str
-        Compact label text.
-    """
+    """Format a compact slider mark label."""
 
     if abs(value) >= 1_000_000.0:
         return f"{value / 1_000_000.0:.1f}M"
@@ -90,18 +79,7 @@ def _format_mark_value(value: float) -> str:
 
 
 def _slider_marks(spec: ControlSpec) -> dict[float, str]:
-    """Build sparse slider marks.
-
-    Parameters
-    ----------
-    spec : ControlSpec
-        Slider metadata.
-
-    Returns
-    -------
-    dict of float to str
-        Slider marks.
-    """
+    """Build sparse slider marks."""
 
     mark_values = np.linspace(spec.minimum, spec.maximum, num=5, dtype=np.float64)
     values = sorted({float(spec.minimum), float(spec.value), float(spec.maximum), *mark_values.tolist()})
@@ -109,18 +87,7 @@ def _slider_marks(spec: ControlSpec) -> dict[float, str]:
 
 
 def _control_card(spec: ControlSpec) -> html.Div:
-    """Build a control card for the Dash layout.
-
-    Parameters
-    ----------
-    spec : ControlSpec
-        Slider metadata.
-
-    Returns
-    -------
-    dash.html.Div
-        Dash layout node.
-    """
+    """Build a control card for the Dash layout."""
 
     return html.Div(
         [
@@ -140,19 +107,31 @@ def _control_card(spec: ControlSpec) -> html.Div:
     )
 
 
-def _params_from_controls(controls: dict[str, Any]) -> tuple[dict[str, Any], str | None]:
-    """Map UI controls into simulator parameters.
+def _params_from_controls(model: str, controls: dict[str, Any]) -> tuple[dict[str, Any], str | None]:
+    """Map UI controls into simulator parameters."""
 
-    Parameters
-    ----------
-    controls : dict of str to Any
-        Slider values.
-
-    Returns
-    -------
-    tuple of dict of str to Any and str or None
-        Simulator parameters and an optional note.
-    """
+    if model == "baseline":
+        v = float(controls["v"])
+        gamma = float(controls["gamma"])
+        note: str | None = None
+        if gamma >= v:
+            note = "gamma >= v makes the baseline model invalid and will raise an error."
+        return (
+            {
+                "p": float(controls["p"]),
+                "q": float(controls["q"]),
+                "K": float(controls["K"]),
+                "v": v,
+                "gamma": gamma,
+                "b0": float(controls["b0"]),
+                "sigma_N": float(controls["sigma_N"]),
+                "N0": float(controls["N0"]),
+                "C0": float(controls["C0"]),
+                "T": int(controls["T"]),
+                "dt": float(controls["dt"]),
+            },
+            note,
+        )
 
     return (
         {
@@ -177,21 +156,15 @@ def _params_from_controls(controls: dict[str, Any]) -> tuple[dict[str, Any], str
     )
 
 
-def build_app() -> Dash:
-    """Build the Dash application.
+def build_app(model: str = DEFAULT_MODEL) -> Dash:
+    """Build the Dash application."""
 
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    dash.Dash
-        Configured Dash application.
-    """
+    model = normalize_model_name(model)
+    control_specs = _make_control_specs(model)
+    simulator = baseline_model if model == "baseline" else advanced_model
 
     app = Dash(__name__)
-    app.title = "startup_sim explorer"
+    app.title = f"startup_sim explorer ({model})"
     app.index_string = """
     <!DOCTYPE html>
     <html>
@@ -293,7 +266,7 @@ def build_app() -> Dash:
                 [
                     html.Div(
                         [
-                            html.Div("startup_sim", className="eyebrow"),
+                            html.Div(f"startup_sim {model}", className="eyebrow"),
                             html.H1("distribution explorer", className="headline"),
                             html.P(
                                 "Adjust the sliders to rerun the simulator. "
@@ -301,7 +274,7 @@ def build_app() -> Dash:
                                 "with reduced opacity so the distribution stays visible.",
                                 className="subhead",
                             ),
-                            html.Div([_control_card(spec) for spec in CONTROL_SPECS], className="control-grid"),
+                            html.Div([_control_card(spec) for spec in control_specs], className="control-grid"),
                             html.Div(id="status", className="status"),
                         ],
                         className="sidebar",
@@ -325,55 +298,39 @@ def build_app() -> Dash:
     @app.callback(
         Output("figure", "figure"),
         Output("status", "children"),
-        [Input(f"control-{spec.name}", "value") for spec in CONTROL_SPECS],
+        [Input(f"control-{spec.name}", "value") for spec in control_specs],
     )
     def _update_figure(*slider_values: float) -> tuple[go.Figure, str]:
-        """Recompute the simulation distribution when controls change.
-
-        Parameters
-        ----------
-        *slider_values : float
-            Current slider values.
-
-        Returns
-        -------
-        tuple of plotly.graph_objects.Figure and str
-            Updated figure and status string.
-        """
+        """Recompute the simulation distribution when controls change."""
 
         controls = {
             spec.name: spec.cast(float(value))
-            for spec, value in zip(CONTROL_SPECS, slider_values, strict=True)
+            for spec, value in zip(control_specs, slider_values, strict=True)
         }
-        params, note = _params_from_controls(controls)
+        params, note = _params_from_controls(model, controls)
         iterations = max(int(controls["iterations"]), 1)
         seed = int(controls["seed"])
-        results = batch_simulate(iterations, base_params=params, seed=seed)
-        status = f"{iterations} runs rendered with seed root {seed}."
+        try:
+            results = simulator.batch_simulate(iterations, base_params=params, seed=seed)
+        except ValueError as exc:
+            return go.Figure(), f"{model} run failed: {exc}"
+
+        status = f"{iterations} {model} runs rendered with seed root {seed}."
         if note is not None:
             status = f"{status} {note}"
-        return build_plotly_figure(results, title="startup_sim distribution explorer", note=note), status
+        return build_plotly_figure(results, title=f"startup_sim distribution explorer ({model})", note=note), status
 
     return app
 
 
-def launch_interactive_explorer(host: str = "127.0.0.1", port: int = 8050) -> None:
-    """Launch the Dash explorer.
+def launch_interactive_explorer(
+    model: str = DEFAULT_MODEL,
+    host: str = "127.0.0.1",
+    port: int = 8050,
+) -> None:
+    """Launch the Dash explorer."""
 
-    Parameters
-    ----------
-    host : str, default="127.0.0.1"
-        Host interface for the Dash server.
-    port : int, default=8050
-        Port for the Dash server.
-
-    Returns
-    -------
-    None
-        Starts the server.
-    """
-
-    app = build_app()
+    app = build_app(model=model)
     run_method = getattr(app, "run", None)
     if run_method is not None:
         run_method(host=host, port=port, debug=False)
@@ -382,23 +339,14 @@ def launch_interactive_explorer(host: str = "127.0.0.1", port: int = 8050) -> No
 
 
 def main() -> None:
-    """Launch the explorer from the command line.
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    None
-        Starts the server.
-    """
+    """Launch the explorer from the command line."""
 
     parser = argparse.ArgumentParser(description="Interactive explorer for startup_sim.")
+    parser.add_argument("--model", choices=MODEL_NAMES, default=DEFAULT_MODEL)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8050)
     args = parser.parse_args()
-    launch_interactive_explorer(host=args.host, port=args.port)
+    launch_interactive_explorer(model=args.model, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":
