@@ -1,0 +1,68 @@
+{
+  "method": "snpe",
+  "model": "advanced",
+  "n_trials": 1,
+  "average_energy_scores": {
+    "cash": 113980.8884634235,
+    "revenue": 98857.98096127567,
+    "customers": 897.2474392842466,
+    "delta_n_plus": 289.7354700415849,
+    "delta_n_minus": 208.91001009876538
+  },
+  "average_parameter_nll": 35.184852600097656,
+  "average_posterior_std": {
+    "p": 0.028814256677987107,
+    "q": 0.10898525495574443,
+    "kappa": 0.5477470925190686,
+    "sigma_q": 0.05351723248667035,
+    "K": 4578.929389528228,
+    "v": 44.061729051173955,
+    "epsilon": 0.05986919438755474,
+    "chi": 0.010848840849939706,
+    "b0": 35278.121202262235,
+    "gamma": 36.429478339453446,
+    "alpha": 122.23618908385349,
+    "sigma_N": 25.851163453676982
+  },
+  "average_variance_ratio": {
+    "p": 0.5954213536445921,
+    "q": 0.9423123804414693,
+    "kappa": 0.8247235853193775,
+    "sigma_q": 0.7883653641536099,
+    "K": 0.5294489673807284,
+    "v": 0.9695766486715348,
+    "epsilon": 0.8335272637186112,
+    "chi": 0.8071164806032115,
+    "b0": 0.8349533282827017,
+    "gamma": 0.8172901523742506,
+    "alpha": 1.0165433428704198,
+    "sigma_N": 0.7389496168860304
+  },
+  "average_interval_width": {
+    "cash": 141705.54653077258,
+    "revenue": 203637.8272966541,
+    "customers": 1664.2181811040668,
+    "delta_n_plus": 391.86145658272716,
+    "delta_n_minus": 305.9787221372478
+  },
+  "average_interval_coverage": {
+    "cash": 1.0,
+    "revenue": 1.0,
+    "customers": 1.0,
+    "delta_n_plus": 1.0,
+    "delta_n_minus": 1.0
+  },
+  "average_inference_seconds": 8.623795244988287,
+  "average_training_seconds": 28.002340609004023,
+  "average_simulator_calls": 5000.0,
+  "average_amortized_query_seconds": 8.623795244988287,
+  "failure_mode_summary": {
+    "surviving": {
+      "predictive_ruin_probability": 0.0,
+      "empirical_ruin_rate": 0.0
+    }
+  },
+  "summary_path": "outputs/snpe_advanced/summary.json",
+  "sbc_plot_path": "outputs/snpe_advanced/sbc_hist.png",
+  "pit_plot_path": "outputs/snpe_advanced/pit_hist.png"
+}

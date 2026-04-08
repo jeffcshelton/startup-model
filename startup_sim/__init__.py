@@ -26,6 +26,8 @@ from startup_sim.model import (
     normalize_model_name,
     simulate,
 )
+from startup_sim.inference import DEFAULT_CONFIG as DEFAULT_INFERENCE_CONFIG
+from startup_sim.inference import InferenceConfig, baseline_log_likelihood, baseline_survival_indicator
 
 __all__ = [
     "ADVANCED_DEFAULT_PARAMS",
@@ -42,6 +44,10 @@ __all__ = [
     "simulate",
     "simulate_advanced",
     "simulate_baseline",
+    "DEFAULT_INFERENCE_CONFIG",
+    "InferenceConfig",
+    "baseline_log_likelihood",
+    "baseline_survival_indicator",
     "plot_with_matplotlib",
     "plot_with_plotly",
     "build_plotly_figure",
