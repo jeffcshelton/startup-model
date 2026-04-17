@@ -7,7 +7,7 @@ from typing import Any, Callable
 import numpy as np
 from dash import Dash, Input, Output, dcc, html
 
-from startup_sim.model import DEFAULT_PARAMS, batch_simulate
+from startup_sim.advanced import DEFAULT_PARAMS, batch_simulate
 from startup_sim.plotting import build_plotly_figure
 
 

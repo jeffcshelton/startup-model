@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 
-from startup_sim.model import DEFAULT_PARAMS, simulate
+from startup_sim.advanced import DEFAULT_PARAMS, simulate
 from startup_sim.plotting import plot_with_matplotlib, plot_with_plotly
 
 
