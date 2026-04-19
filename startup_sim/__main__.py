@@ -40,6 +40,7 @@ def _add_advanced_arguments(parser: argparse.ArgumentParser, defaults: dict[str,
     parser.add_argument("--K", type=float, default=float(defaults["K"]))
     parser.add_argument("--v", type=float, default=float(defaults["v"]))
     parser.add_argument("--epsilon", type=float, default=float(defaults["epsilon"]))
+    parser.add_argument("--chi", type=float, default=float(defaults["chi"]))
     parser.add_argument("--gamma", type=float, default=float(defaults["gamma"]))
     parser.add_argument("--b0", type=float, default=float(defaults["b0"]))
     parser.add_argument("--alpha", type=float, default=float(defaults["alpha"]))

@@ -28,6 +28,7 @@ def main() -> None:
     parser.add_argument("--K", type=float, default=float(DEFAULT_PARAMS["K"]))
     parser.add_argument("--v", type=float, default=float(DEFAULT_PARAMS["v"]))
     parser.add_argument("--epsilon", type=float, default=float(DEFAULT_PARAMS["epsilon"]))
+    parser.add_argument("--chi", type=float, default=float(DEFAULT_PARAMS["chi"]))
     parser.add_argument("--gamma", type=float, default=float(DEFAULT_PARAMS["gamma"]))
     parser.add_argument("--b0", type=float, default=float(DEFAULT_PARAMS["b0"]))
     parser.add_argument("--alpha", type=float, default=float(DEFAULT_PARAMS["alpha"]))
@@ -47,6 +48,7 @@ def main() -> None:
         K=args.K,
         v=args.v,
         epsilon=args.epsilon,
+        chi=args.chi,
         gamma=args.gamma,
         b0=args.b0,
         alpha=args.alpha,

@@ -15,6 +15,7 @@ DEFAULT_PARAMS: dict[str, float | int] = {
     "K": 50_000.0,
     "v": 100.0,
     "epsilon": 0.1,
+    "chi": 0.02,
     "b0": 50_000.0,
     "gamma": 40.0,
     "alpha": 200.0,
@@ -38,10 +39,10 @@ def acquisition_flow(customers: float, p: float, q: float, market_size: float) -
     return float((p + q * customers / market_size) * (market_size - customers))
 
 
-def customer_drift(customers: float, p: float, q: float, market_size: float) -> float:
+def customer_drift(customers: float, p: float, q: float, market_size: float, chi: float) -> float:
     """Evaluate deterministic customer drift."""
 
-    return acquisition_flow(customers, p, q, market_size)
+    return float(acquisition_flow(customers, p, q, market_size) - chi * customers)
 
 
 def revenue(customers: float, market_size: float, v: float, epsilon: float) -> float:
@@ -57,13 +58,14 @@ def cash_drift(
     market_size: float,
     v: float,
     epsilon: float,
+    chi: float,
     b0: float,
     gamma: float,
     alpha: float,
 ) -> float:
     """Evaluate deterministic cash drift."""
 
-    net_growth = customer_drift(customers, p, q, market_size)
+    net_growth = customer_drift(customers, p, q, market_size, chi)
     return float(
         revenue(customers, market_size, v, epsilon)
         - b0
@@ -80,6 +82,7 @@ def _record_row(
     dt: float,
     v: float,
     epsilon: float,
+    chi: float,
     b0: float,
     gamma: float,
     alpha: float,
@@ -88,9 +91,10 @@ def _record_row(
     """Build one recorded observation row."""
 
     acquired = float(max(acquisition_flow(customers, p, q, market_size), 0.0) * dt)
+    churned = float(chi * customers * dt)
     current_revenue = revenue(customers, market_size, v, epsilon)
-    burn = float(b0 + gamma * customers + alpha * max(customer_drift(customers, p, q, market_size), 0.0))
-    return np.array([customers, acquired, 0.0, current_revenue, burn, cash, q], dtype=np.float64)
+    burn = float(b0 + gamma * customers + alpha * max(customer_drift(customers, p, q, market_size, chi), 0.0))
+    return np.array([customers, acquired, churned, current_revenue, burn, cash, q], dtype=np.float64)
 
 
 def _ode_rhs(
@@ -101,6 +105,7 @@ def _ode_rhs(
     market_size: float,
     v: float,
     epsilon: float,
+    chi: float,
     b0: float,
     gamma: float,
     alpha: float,
@@ -114,8 +119,8 @@ def _ode_rhs(
 
     return np.array(
         [
-            customer_drift(customers, p, q, market_size),
-            cash_drift(customers, p, q, market_size, v, epsilon, b0, gamma, alpha),
+            customer_drift(customers, p, q, market_size, chi),
+            cash_drift(customers, p, q, market_size, v, epsilon, chi, b0, gamma, alpha),
         ],
         dtype=np.float64,
     )
@@ -129,6 +134,7 @@ def simulate(
     K: float,
     v: float,
     epsilon: float,
+    chi: float,
     b0: float,
     gamma: float,
     alpha: float,
@@ -156,7 +162,7 @@ def simulate(
     cash = float(C0)
     latent_q = float(max(q, Q_MIN))
     time = 0.0
-    trajectory[0] = _record_row(customers, latent_q, p, K, dt, v, epsilon, b0, gamma, alpha, cash)
+    trajectory[0] = _record_row(customers, latent_q, p, K, dt, v, epsilon, chi, b0, gamma, alpha, cash)
 
     ruin_time: float | None = None
     if cash <= 0.0:
@@ -172,7 +178,7 @@ def simulate(
             _ode_rhs,
             (time, time + dt),
             np.array([customers, cash], dtype=np.float64),
-            args=(p, latent_q, K, v, epsilon, b0, gamma, alpha),
+            args=(p, latent_q, K, v, epsilon, chi, b0, gamma, alpha),
             method="RK45",
         )
 
@@ -200,7 +206,7 @@ def simulate(
         )
         customers = stochastic_customers
         time += dt
-        trajectory[step + 1] = _record_row(customers, latent_q, p, K, dt, v, epsilon, b0, gamma, alpha, cash)
+        trajectory[step + 1] = _record_row(customers, latent_q, p, K, dt, v, epsilon, chi, b0, gamma, alpha, cash)
 
         if cash <= 0.0:
             ruin_time = time
@@ -218,6 +224,7 @@ def simulate(
             "K": float(K),
             "v": float(v),
             "epsilon": float(epsilon),
+            "chi": float(chi),
             "b0": float(b0),
             "gamma": float(gamma),
             "alpha": float(alpha),
