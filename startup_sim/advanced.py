@@ -126,6 +126,29 @@ def _ode_rhs(
     )
 
 
+def _ruin_event(
+    _time: float,
+    state: np.ndarray,
+    p: float,
+    q: float,
+    market_size: float,
+    v: float,
+    epsilon: float,
+    chi: float,
+    b0: float,
+    gamma: float,
+    alpha: float,
+) -> float:
+    """Detect cash ruin during deterministic integration."""
+
+    del p, q, market_size, v, epsilon, chi, b0, gamma, alpha
+    return float(state[1])
+
+
+_ruin_event.terminal = True
+_ruin_event.direction = -1
+
+
 def simulate(
     p: float,
     q: float,
@@ -180,7 +203,17 @@ def simulate(
             np.array([customers, cash], dtype=np.float64),
             args=(p, latent_q, K, v, epsilon, chi, b0, gamma, alpha),
             method="RK45",
+            events=_ruin_event,
         )
+
+        if solve_result.t_events[0].size > 0:
+            ruin_time = float(solve_result.t_events[0][0])
+            customers = float(np.clip(solve_result.y_events[0][0, 0], 0.0, K))
+            cash = float(solve_result.y_events[0][0, 1])
+            trajectory[step + 1] = _record_row(customers, latent_q, p, K, dt, v, epsilon, chi, b0, gamma, alpha, cash)
+            if step + 1 < T:
+                trajectory[step + 2 :] = trajectory[step + 1]
+            break
 
         deterministic_customers = float(np.clip(solve_result.y[0, -1], 0.0, K))
         deterministic_cash = float(solve_result.y[1, -1])
