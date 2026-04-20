@@ -10,6 +10,27 @@
 - Python 3.10+
 - `numpy`
 - `scipy`
+- `jax`
+- `numpyro`
+- `torch`
+- `sbi`
+- `matplotlib`
+
+## Nix Shells
+
+The repository now exposes two shells:
+
+```bash
+nix develop
+```
+
+For the simulator, plotting, and general development.
+
+```bash
+nix develop .#inference
+```
+
+For the inference stack, including the custom `sbi` and `numpyro` derivations.
 
 ## Command Line
 
@@ -65,3 +86,18 @@ Additional visualization requirements:
 - `matplotlib`
 - `plotly`
 - `dash`
+
+## Inference
+
+Run baseline NUTS evaluation:
+
+```bash
+python -m startup_sim.infer --method mcmc --model baseline --seed 0
+```
+
+Run SNPE evaluation on either model:
+
+```bash
+python -m startup_sim.infer --method snpe --model baseline --seed 0
+python -m startup_sim.infer --method snpe --model advanced --seed 0
+```

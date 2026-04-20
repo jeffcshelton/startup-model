@@ -1,0 +1,58 @@
+{
+  "method": "mcmc",
+  "model": "baseline",
+  "n_trials": 100,
+  "average_energy_scores": {
+    "cash": 28407.43719138523,
+    "revenue": 151502.33762217875,
+    "customers": 1257.0076689078953,
+    "delta_n_plus": 364.02474118804196,
+    "delta_n_minus": 317.0925971919737
+  },
+  "average_parameter_nll": 13.361708953187154,
+  "average_posterior_std": {
+    "p": 0.029097328412853285,
+    "q": 0.09966101756031294,
+    "K": 4809.846591601253,
+    "v": 0.28599916947703696,
+    "gamma": 0.5153416432046556,
+    "b0": 553.4375370976829,
+    "sigma_N": 1.4530782360989765
+  },
+  "average_variance_ratio": {
+    "p": 0.6898342913755614,
+    "q": 0.8165054436150606,
+    "K": 0.6793452995806076,
+    "v": 4.6402913440168137e-05,
+    "gamma": 0.00036579033177382565,
+    "b0": 0.00041220389554949875,
+    "sigma_N": 0.0037205460571112987
+  },
+  "average_interval_width": {
+    "cash": 32961.05697334266,
+    "revenue": 184034.74650974706,
+    "customers": 1514.4800180908505,
+    "delta_n_plus": 322.93260607135306,
+    "delta_n_minus": 249.1664903253465
+  },
+  "average_interval_coverage": {
+    "cash": 0.8923076923076924,
+    "revenue": 0.8376923076923074,
+    "customers": 0.839230769230769,
+    "delta_n_plus": 0.9053846153846153,
+    "delta_n_minus": 0.9123076923076923
+  },
+  "average_inference_seconds": 1.4457004331695498,
+  "average_training_seconds": 0.0,
+  "average_simulator_calls": 0.0,
+  "average_amortized_query_seconds": 1.4457004331695498,
+  "failure_mode_summary": {
+    "surviving": {
+      "predictive_ruin_probability": 0.0,
+      "empirical_ruin_rate": 0.0
+    }
+  },
+  "summary_path": "outputs/mcmc_baseline/summary.json",
+  "sbc_plot_path": "outputs/mcmc_baseline/sbc_hist.png",
+  "pit_plot_path": "outputs/mcmc_baseline/pit_hist.png"
+}
