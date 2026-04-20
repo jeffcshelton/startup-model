@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
-from startup_sim.inference.config import InferenceConfig
-from startup_sim.inference.utils import ADVANCED_PARAM_ORDER, BASELINE_PARAM_ORDER, observable_matrix, prior_sampler, simulate_from_theta
+from .config import InferenceConfig
+from .utils import ADVANCED_PARAM_ORDER, BASELINE_PARAM_ORDER, observable_matrix, prior_sampler, simulate_from_theta
 
 
 def _require_torch_and_sbi():
@@ -174,20 +174,20 @@ def train_snpe(
 ) -> SNPEResult:
     torch, _, SNPE, posterior_nn, _ = _require_torch_and_sbi()
     torch.manual_seed(seed)
-    n_sim = cfg.n_simulations_snpe if n_simulations is None else int(n_simulations)
-    n_epochs = cfg.snpe_epochs if max_num_epochs is None else int(max_num_epochs)
+    n_sim = cfg.snpe_sims if n_simulations is None else int(n_simulations)
+    n_epochs = cfg.epochs if max_num_epochs is None else int(max_num_epochs)
 
     start = time.perf_counter()
     theta_np, x_np = _simulate_surviving_dataset(model, cfg, seed, n_sim)
     prior = _make_sbi_prior(model)
-    embedding_net = _embedding_class()(input_size=x_np.shape[-1], embedding_dim=cfg.snpe_embedding_dim)
+    embedding_net = _embedding_class()(input_size=x_np.shape[-1], embedding_dim=cfg.embed_dim)
     density_estimator_builder = posterior_nn(model="nsf", embedding_net=embedding_net)
     inference = SNPE(prior=prior, density_estimator=density_estimator_builder)
     theta = torch.as_tensor(theta_np, dtype=torch.float32)
     x = torch.as_tensor(x_np, dtype=torch.float32)
     density_estimator = inference.append_simulations(theta, x).train(
-        training_batch_size=cfg.snpe_batch_size,
-        validation_fraction=cfg.snpe_validation_fraction,
+        training_batch_size=cfg.batch_size,
+        validation_fraction=cfg.val_frac,
         max_num_epochs=n_epochs,
         show_train_summary=False,
     )
@@ -198,7 +198,7 @@ def train_snpe(
     curve_path = _plot_losses(
         training_losses,
         validation_losses,
-        Path(output_dir or cfg.outputs_dir / f"snpe_{model}_loss.png"),
+        Path(output_dir or cfg.out_dir / f"snpe_{model}_loss.png"),
     )
     return SNPEResult(
         model=model,
@@ -279,7 +279,7 @@ def posterior_predictive(
             seed=int(rng.integers(0, 2**31 - 1)) + idx,
             N0=float(last[0]),
             C0=float(last[5]),
-            T=cfg.forecast_steps,
+            T=cfg.pred_steps,
         )
         predictive.append(observable_matrix(sim["trajectory"]))
     return np.stack(predictive, axis=0)

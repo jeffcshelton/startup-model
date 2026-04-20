@@ -11,9 +11,9 @@ from typing import Any
 import numpy as np
 from tqdm.auto import tqdm
 
-from startup_sim.inference.config import InferenceConfig
-from startup_sim.inference.mcmc import posterior_array, posterior_predictive_baseline, run_baseline_nuts
-from startup_sim.inference.metrics import (
+from .config import InferenceConfig
+from .mcmc import posterior_array, posterior_predictive_baseline, run_baseline_nuts
+from .metrics import (
     classify_regime,
     energy_score_by_dimension,
     pit_values,
@@ -26,9 +26,9 @@ from startup_sim.inference.metrics import (
     ruin_probability,
     sbc_rank,
 )
-from startup_sim.inference.plotting import save_pit_histograms, save_posterior_predictive_overlay, save_sbc_rank_histograms
-from startup_sim.inference.snpe import posterior_log_prob, posterior_predictive, sample_posterior, train_snpe
-from startup_sim.inference.utils import ADVANCED_PARAM_ORDER, BASELINE_OBSERVABLES, BASELINE_PARAM_ORDER, dict_to_theta, sample_surviving_trial
+from .plotting import save_pit_histograms, save_posterior_predictive_overlay, save_sbc_rank_histograms
+from .snpe import posterior_log_prob, posterior_predictive, sample_posterior, train_snpe
+from .utils import ADVANCED_PARAM_ORDER, BASELINE_OBSERVABLES, BASELINE_PARAM_ORDER, dict_to_theta, sample_surviving_trial
 
 
 @dataclass(slots=True)
@@ -96,7 +96,7 @@ def _run_single_trial_with_snpe(
     samples = sample_posterior(
         snpe_result,
         trial.observed_observables,
-        num_samples=cfg.snpe_posterior_samples,
+        num_samples=cfg.post_samples,
         seed=seed + 17,
     )
     amortized_seconds = time.perf_counter() - posterior_start
@@ -120,9 +120,9 @@ def _run_single_trial_with_snpe(
         empirical_ruin=float(not trial.forecast_result["survived"]),
         inference_seconds=amortized_seconds,
         training_seconds=0.0,
-        simulator_calls=cfg.snpe_posterior_samples,
+        simulator_calls=cfg.post_samples,
         amortized_query_seconds=amortized_seconds,
-        sbc_rank=sbc_rank(samples[: cfg.sbc_posterior_samples], theta_true).astype(int).tolist(),
+        sbc_rank=sbc_rank(samples[: cfg.sbc_samples], theta_true).astype(int).tolist(),
         pit_values=np.asarray(pit, dtype=np.float64).tolist(),
     )
 
@@ -149,8 +149,8 @@ def _run_single_trial_with_mcmc(
         trial.observed_result,
         cfg=cfg,
         seed=seed + 29,
-        num_samples=cfg.snpe_posterior_samples,
-        show_progress=cfg.mcmc_trial_workers <= 1,
+        num_samples=cfg.post_samples,
+        show_progress=cfg.jobs <= 1,
     )
     theta_true = dict_to_theta(trial.theta_true, model="baseline")
     pit = pit_values(predictive, trial.future_observables)
@@ -171,16 +171,16 @@ def _run_single_trial_with_mcmc(
         training_seconds=0.0,
         simulator_calls=0,
         amortized_query_seconds=result.elapsed_seconds,
-        sbc_rank=sbc_rank(samples[: cfg.sbc_posterior_samples], theta_true).astype(int).tolist(),
+        sbc_rank=sbc_rank(samples[: cfg.sbc_samples], theta_true).astype(int).tolist(),
         pit_values=np.asarray(pit, dtype=np.float64).tolist(),
     )
 
 
 def _mcmc_trial_worker_count(cfg: InferenceConfig) -> int:
-    if cfg.mcmc_trial_workers > 0:
-        return cfg.mcmc_trial_workers
+    if cfg.jobs > 0:
+        return cfg.jobs
     available = os.cpu_count() or 1
-    per_trial = max(cfg.mcmc_num_chains, 1)
+    per_trial = max(cfg.chains, 1)
     # Leave headroom for Python overhead and posterior predictive simulation.
     return max(1, min(4, available // per_trial))
 
@@ -198,7 +198,7 @@ def run_evaluation_study(
     if method == "mcmc" and model != "baseline":
         raise ValueError("MCMC is only supported for the baseline model.")
 
-    base_output = Path(output_dir or cfg.outputs_dir / f"{method}_{model}")
+    base_output = Path(output_dir or cfg.out_dir / f"{method}_{model}")
     base_output.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(seed)
     trial_summaries: list[TrialSummary] = []
@@ -209,7 +209,7 @@ def run_evaluation_study(
         snpe_result = train_snpe(model=model, cfg=cfg, seed=seed + 5, output_dir=base_output)
         training_seconds = snpe_result.elapsed_seconds
 
-    trial_seeds = [int(rng.integers(0, 2**31 - 1)) for _ in range(cfg.n_evaluation_trials)]
+    trial_seeds = [int(rng.integers(0, 2**31 - 1)) for _ in range(cfg.trials)]
     if method == "mcmc":
         worker_count = _mcmc_trial_worker_count(cfg)
         if worker_count == 1:
@@ -275,7 +275,7 @@ def run_evaluation_study(
     summary = EvaluationSummary(
         method=method,
         model=model,
-        n_trials=cfg.n_evaluation_trials,
+        n_trials=cfg.trials,
         average_energy_scores=energy,
         average_parameter_nll=nll,
         average_posterior_std=post_std,

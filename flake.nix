@@ -10,30 +10,13 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        cudaPkgs = import nixpkgs {
-          inherit system;
-          config = {
-            allowUnfree = true;
-            cudaSupport = true;
-          };
-        };
-        cudaJax = cudaPkgs.python313Packages.jax;
-        cudaJaxlib = cudaPkgs.python313Packages.jaxlib;
-        basePython = pkgs.python313.withPackages (ps: with ps; [
-          numpy
-          scipy
-          matplotlib
-          plotly
-          dash
-          pytest
-        ]);
         inferencePython = (pkgs.python313.override {
           packageOverrides = self: super: {
             nflows = self.buildPythonPackage rec {
               pname = "nflows";
               version = "0.14";
               pyproject = true;
-              src = cudaPkgs.fetchPypi {
+              src = pkgs.fetchPypi {
                 inherit pname version;
                 hash = "sha256-YpmESmL5mZ/N8tlcstAcCRpQE2vReCbjA6umRrLRG1U=";
               };
@@ -54,7 +37,7 @@
               version = "0.15.1";
               format = "wheel";
               dontBuild = true;
-              src = cudaPkgs.fetchPypi {
+              src = pkgs.fetchPypi {
                 inherit pname version format;
                 python = "py2.py3";
                 abi = "none";
@@ -82,7 +65,7 @@
               dontCheckRuntimeDeps = true;
               nativeBuildInputs = with self; [ pythonRelaxDepsHook ];
               pythonRelaxDeps = [ "numpy" ];
-              src = cudaPkgs.fetchPypi {
+              src = pkgs.fetchPypi {
                 inherit pname version format;
                 python = "py3";
                 abi = "none";
@@ -112,7 +95,7 @@
               version = "0.19.0";
               format = "wheel";
               dontBuild = true;
-              src = cudaPkgs.fetchPypi {
+              src = pkgs.fetchPypi {
                 inherit pname version format;
                 python = "py3";
                 abi = "none";
@@ -121,8 +104,8 @@
                 hash = "sha256-EGOiwTGgeFcZ4TyOVfG4LkGFDYFN8UlBgJdTH0297ag=";
               };
               propagatedBuildInputs = with self; [
-                cudaJax
-                cudaJaxlib
+                jax
+                jaxlib
                 multipledispatch
                 numpy
                 tqdm
@@ -136,7 +119,7 @@
               version = "0.21.0";
               format = "wheel";
               dontBuild = true;
-              src = cudaPkgs.fetchPypi {
+              src = pkgs.fetchPypi {
                 inherit pname version format;
                 python = "py2.py3";
                 abi = "none";
@@ -166,28 +149,24 @@
           numpy
           scipy
           matplotlib
+          plotly
+          dash
           pytest
-          cudaJax
-          cudaJaxlib
+          jax
+          jaxlib
           numpyro
           torch
+          tqdm
           sbi
         ]);
       in
       {
-        packages.default = basePython;
-        packages.inference = inferencePython;
+        packages.default = inferencePython;
         devShells.default = pkgs.mkShell {
-          packages = [ basePython ];
-          shellHook = ''
-            export MPLCONFIGDIR="$PWD/.cache/matplotlib"
-            mkdir -p "$MPLCONFIGDIR"
-          '';
-        };
-        devShells.inference = pkgs.mkShell {
           packages = [ inferencePython ];
           shellHook = ''
             export MPLCONFIGDIR="$PWD/.cache/matplotlib"
+            export JAX_PLATFORMS=cpu
             mkdir -p "$MPLCONFIGDIR"
           '';
         };

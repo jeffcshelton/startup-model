@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-import startup_sim.advanced as advanced_model
-import startup_sim.baseline as baseline_model
+from . import advanced as advanced_model
+from . import baseline as baseline_model
 
 DEFAULT_MODEL = baseline_model.MODEL_NAME
 MODEL_NAMES = (baseline_model.MODEL_NAME, advanced_model.MODEL_NAME)

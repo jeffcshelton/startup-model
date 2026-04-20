@@ -6,9 +6,9 @@ from typing import Any, Callable
 import numpy as np
 from scipy import stats
 
-from startup_sim import advanced as advanced_model
-from startup_sim import baseline as baseline_model
-from startup_sim.inference.config import InferenceConfig
+from .. import advanced as advanced_model
+from .. import baseline as baseline_model
+from .config import InferenceConfig
 
 BASELINE_PARAM_ORDER = ("p", "q", "K", "v", "gamma", "b0", "sigma_N")
 ADVANCED_PARAM_ORDER = (
@@ -134,7 +134,7 @@ def simulate_from_theta(
         defaults.update(theta)
         if float(defaults["v"]) <= float(defaults["gamma"]):
             raise ValueError("baseline parameters require v > gamma.")
-        defaults["T"] = int(cfg.observation_steps if T is None else T)
+        defaults["T"] = int(cfg.obs_steps if T is None else T)
         defaults["dt"] = float(cfg.dt)
         defaults["seed"] = int(seed)
         if N0 is not None:
@@ -146,7 +146,7 @@ def simulate_from_theta(
     if model == "advanced":
         defaults = dict(advanced_model.DEFAULT_PARAMS)
         defaults.update(theta)
-        defaults["T"] = int(cfg.observation_steps if T is None else T)
+        defaults["T"] = int(cfg.obs_steps if T is None else T)
         defaults["dt"] = float(cfg.dt)
         defaults["seed"] = int(seed)
         if N0 is not None:
@@ -167,7 +167,7 @@ def split_observed_and_future(
 ) -> TrialData:
     """Simulate one observed window and one future window from the same parameters."""
 
-    observed = simulate_from_theta(theta, model=model, cfg=cfg, seed=seed, T=cfg.observation_steps)
+    observed = simulate_from_theta(theta, model=model, cfg=cfg, seed=seed, T=cfg.obs_steps)
     last = observed["trajectory"][-1]
     future = simulate_from_theta(
         theta,
@@ -176,7 +176,7 @@ def split_observed_and_future(
         seed=seed + 1,
         N0=float(last[0]),
         C0=float(last[5]),
-        T=cfg.forecast_steps,
+        T=cfg.pred_steps,
     )
     return TrialData(
         theta_true={key: float(value) for key, value in theta.items()},

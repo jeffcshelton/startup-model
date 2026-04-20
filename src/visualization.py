@@ -7,7 +7,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from startup_sim.model import normalize_model_name
+from .model import normalize_model_name
 
 SERIES_COLORS: dict[str, str] = {
     "customers": "#0f766e",
@@ -21,8 +21,6 @@ SERIES_COLORS: dict[str, str] = {
 
 
 def _money_scale(values: np.ndarray) -> tuple[float, str]:
-    """Choose a display scale for money-valued series."""
-
     max_abs = float(np.max(np.abs(values))) if values.size else 0.0
     if max_abs >= 1_000_000.0:
         return 1_000_000.0, "$M"
@@ -32,15 +30,11 @@ def _money_scale(values: np.ndarray) -> tuple[float, str]:
 
 
 def _realized_flows(customers: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Compute realized customer gains and losses."""
-
     delta_customers = np.diff(customers, prepend=customers[0])
     return np.maximum(delta_customers, 0.0), np.maximum(-delta_customers, 0.0)
 
 
 def _model_name(result: dict[str, Any]) -> str:
-    """Infer the model name for a simulation result."""
-
     if "model" in result:
         return normalize_model_name(result["model"])
 
@@ -53,8 +47,6 @@ def _model_name(result: dict[str, Any]) -> str:
 
 
 def _panel_data(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Build panel data shared by matplotlib and Plotly rendering."""
-
     if not results:
         raise ValueError("results must not be empty.")
 
@@ -124,8 +116,6 @@ def _panel_data(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _line_alpha(n_runs: int) -> float:
-    """Choose an overlay alpha value."""
-
     if n_runs <= 1:
         return 0.85
     return float(min(0.45, max(0.04, 1.2 / np.sqrt(n_runs))))
@@ -136,8 +126,6 @@ def build_plotly_figure(
     title: str | None = None,
     note: str | None = None,
 ) -> go.Figure:
-    """Build a Plotly figure from one or more simulation runs."""
-
     if not results:
         raise ValueError("results must not be empty.")
 
@@ -249,14 +237,10 @@ def build_plotly_figure(
 
 
 def plot_with_plotly(result: dict[str, Any], title: str | None = None) -> None:
-    """Display a Plotly visualization for one run."""
-
     build_plotly_figure([result], title=title).show()
 
 
 def plot_with_matplotlib(result: dict[str, Any], title: str | None = None) -> None:
-    """Display a matplotlib visualization for one run."""
-
     panels = _panel_data([result])
     time_axis = np.arange(len(result["trajectory"]), dtype=np.float64) * float(result["params"]["dt"])
     figure, axes = plt.subplots(len(panels), 1, figsize=(10.0, 3.0 * len(panels)), sharex=True)
@@ -293,8 +277,6 @@ def plot_with_matplotlib(result: dict[str, Any], title: str | None = None) -> No
 
 
 def _hex_to_rgba(hex_color: str, alpha: float) -> str:
-    """Convert a hex color to an rgba string."""
-
     stripped = hex_color.lstrip("#")
     red = int(stripped[0:2], 16)
     green = int(stripped[2:4], 16)

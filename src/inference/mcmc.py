@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
-from startup_sim.inference.config import InferenceConfig
-from startup_sim.inference.likelihood import baseline_log_likelihood
-from startup_sim.inference.utils import (
+from .config import InferenceConfig
+from .likelihood import baseline_log_likelihood
+from .utils import (
     BASELINE_PARAM_ORDER,
     baseline_theta_to_dict,
     observable_matrix,
@@ -310,11 +310,11 @@ def run_baseline_nuts(
     # Baseline NUTS is a small, control-flow-heavy x64 workload. On this machine it is
     # substantially faster on CPU than on the CUDA backend, so default to CPU unless
     # the caller explicitly requests otherwise.
-    os.environ["JAX_PLATFORMS"] = cfg.mcmc_platform
+    os.environ["JAX_PLATFORMS"] = cfg.platform
     try:
         import numpyro
 
-        numpyro.set_host_device_count(cfg.mcmc_num_chains)
+        numpyro.set_host_device_count(cfg.chains)
     except Exception:
         pass
     _, random, _, _, MCMC, NUTS, init_to_value = _require_numpyro()
@@ -330,18 +330,18 @@ def run_baseline_nuts(
     initial_cash = float(trajectory[0, 5])
     revenue_obs_sigma = _observation_sigma_from_series(
         observed_revenue,
-        cfg.baseline_revenue_obs_rel_sigma,
-        cfg.baseline_revenue_obs_min_sigma,
+        cfg.rev_rel_sigma,
+        cfg.rev_min_sigma,
     )
     burn_obs_sigma = _observation_sigma_from_series(
         observed_burn,
-        cfg.baseline_burn_obs_rel_sigma,
-        cfg.baseline_burn_obs_min_sigma,
+        cfg.burn_rel_sigma,
+        cfg.burn_min_sigma,
     )
     cash_obs_sigma = _observation_sigma_from_series(
         observed_cash,
-        cfg.baseline_cash_obs_rel_sigma,
-        cfg.baseline_cash_obs_min_sigma,
+        cfg.cash_rel_sigma,
+        cfg.cash_min_sigma,
     )
     init_values = _baseline_init_values(
         observed_customers,
@@ -363,17 +363,17 @@ def run_baseline_nuts(
         burn_obs_sigma,
         cash_obs_sigma,
     )
-    chain_method = "parallel" if cfg.mcmc_platform == "cpu" else "vectorized"
+    chain_method = "parallel" if cfg.platform == "cpu" else "vectorized"
     kernel = NUTS(
         model,
-        target_accept_prob=cfg.mcmc_target_accept_prob,
+        target_accept_prob=cfg.target_accept,
         init_strategy=init_to_value(values=init_values),
     )
     mcmc = MCMC(
         kernel,
-        num_warmup=cfg.mcmc_num_warmup,
-        num_samples=cfg.mcmc_num_samples,
-        num_chains=cfg.mcmc_num_chains,
+        num_warmup=cfg.warmup,
+        num_samples=cfg.samples,
+        num_chains=cfg.chains,
         chain_method=chain_method,
         progress_bar=False,
     )
@@ -392,10 +392,10 @@ def run_baseline_nuts(
         "b0": raw_samples["b0"],
         "sigma_N": raw_samples["sigma_N"],
     }
-    diagnostics = compute_mcmc_diagnostics(posterior_samples, thinning=cfg.mcmc_thinning_for_ess)
+    diagnostics = compute_mcmc_diagnostics(posterior_samples, thinning=cfg.thin)
     trace_plot_paths = _save_trace_plots(
         posterior_samples,
-        Path(output_dir or cfg.outputs_dir / "mcmc_traces"),
+        Path(output_dir or cfg.out_dir / "mcmc_traces"),
     )
     return MCMCResult(
         posterior_samples=posterior_samples,
@@ -441,7 +441,7 @@ def posterior_predictive_baseline(
             seed=int(rng.integers(0, 2**31 - 1)) + idx,
             N0=float(last[0]),
             C0=float(last[5]),
-            T=cfg.forecast_steps,
+            T=cfg.pred_steps,
         )
         sims.append(observable_matrix(run["trajectory"]))
     predictive = np.stack(sims, axis=0)

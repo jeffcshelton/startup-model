@@ -1,22 +1,22 @@
-from startup_sim.advanced import (
+from .advanced import (
     DEFAULT_PARAMS as ADVANCED_DEFAULT_PARAMS,
 )
-from startup_sim.advanced import (
+from .advanced import (
     batch_simulate as batch_simulate_advanced,
 )
-from startup_sim.advanced import (
+from .advanced import (
     simulate as simulate_advanced,
 )
-from startup_sim.baseline import (
+from .baseline import (
     DEFAULT_PARAMS as BASELINE_DEFAULT_PARAMS,
 )
-from startup_sim.baseline import (
+from .baseline import (
     batch_simulate as batch_simulate_baseline,
 )
-from startup_sim.baseline import (
+from .baseline import (
     simulate as simulate_baseline,
 )
-from startup_sim.model import (
+from .model import (
     DEFAULT_MODEL,
     DEFAULT_PARAMS,
     MODEL_NAMES,
@@ -26,8 +26,8 @@ from startup_sim.model import (
     normalize_model_name,
     simulate,
 )
-from startup_sim.inference import DEFAULT_CONFIG as DEFAULT_INFERENCE_CONFIG
-from startup_sim.inference import InferenceConfig, baseline_log_likelihood, baseline_survival_indicator
+from .inference import DEFAULT_CONFIG as DEFAULT_INFERENCE_CONFIG
+from .inference import InferenceConfig, baseline_log_likelihood, baseline_survival_indicator
 
 __all__ = [
     "ADVANCED_DEFAULT_PARAMS",
@@ -58,7 +58,7 @@ __all__ = [
 def plot_with_matplotlib(*args, **kwargs):
     """Dispatch to the matplotlib visualizer."""
 
-    from startup_sim.plotting import plot_with_matplotlib as _plot_with_matplotlib
+    from .visualization import plot_with_matplotlib as _plot_with_matplotlib
 
     return _plot_with_matplotlib(*args, **kwargs)
 
@@ -66,7 +66,7 @@ def plot_with_matplotlib(*args, **kwargs):
 def plot_with_plotly(*args, **kwargs):
     """Dispatch to the Plotly visualizer."""
 
-    from startup_sim.plotting import plot_with_plotly as _plot_with_plotly
+    from .visualization import plot_with_plotly as _plot_with_plotly
 
     return _plot_with_plotly(*args, **kwargs)
 
@@ -74,7 +74,7 @@ def plot_with_plotly(*args, **kwargs):
 def build_plotly_figure(*args, **kwargs):
     """Dispatch to the Plotly figure builder."""
 
-    from startup_sim.plotting import build_plotly_figure as _build_plotly_figure
+    from .visualization import build_plotly_figure as _build_plotly_figure
 
     return _build_plotly_figure(*args, **kwargs)
 
@@ -82,7 +82,7 @@ def build_plotly_figure(*args, **kwargs):
 def launch_interactive_explorer(*args, **kwargs):
     """Dispatch to the interactive explorer."""
 
-    from startup_sim.interactive_plot import (
+    from .interactive_plot import (
         launch_interactive_explorer as _launch_interactive_explorer,
     )
 

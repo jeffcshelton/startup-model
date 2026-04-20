@@ -5,7 +5,7 @@ from typing import Iterable
 
 import numpy as np
 
-from startup_sim.inference.utils import kde_logpdf, prior_variances
+from .utils import kde_logpdf, prior_variances
 
 
 def energy_score_ensemble(predictive: np.ndarray, truth: np.ndarray) -> float:

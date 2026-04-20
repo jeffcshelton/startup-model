@@ -4,7 +4,7 @@ from typing import Any
 
 import numpy as np
 
-from startup_sim.inference.utils import BASELINE_PARAM_ORDER, baseline_theta_to_dict
+from .utils import BASELINE_PARAM_ORDER, baseline_theta_to_dict
 
 
 def _extract_baseline_observables(

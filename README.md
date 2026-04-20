@@ -1,11 +1,31 @@
-# startup_sim
+# Startup Simulator
 
-`startup_sim` simulates startup customer growth, cash dynamics, and ruin detection with two distinct models:
+This startup simulator models customer growth, cash dynamics, and run detection
+for hypothetical startup companies with given metrics. It consists of a
+simulator, which plays forward a startup's trajectory given certain parameters,
+as well as methods of inferring the original parameters given noisy,
+data-limited trajectory paths using uncertainty quantification.
 
-- `baseline`: the original stochastic Bass-style adoption model from `main`
-- `advanced`: the expanded checkpoint2 model with latent virality, churn, and price compression
+There are two models implemented, with corresponding UQ methods tailored to
+each.
 
-## Requirements
+### Baseline
+
+This is a Bass-style adoption model with ruin detection.
+
+### Advanced
+
+Expansion on the Bass model that add latent virality, churn, and price
+compression.
+
+**TODO:** Full descriptions of models.
+
+## Usage
+
+### Requirements
+
+The simulators and UQ methods are built with Python, and they require the
+following packages to be installed to function:
 
 - Python 3.10+
 - `numpy`
@@ -15,89 +35,64 @@
 - `torch`
 - `sbi`
 - `matplotlib`
+- `plotly`
+- `dash`
 
-## Nix Shells
-
-The repository now exposes two shells:
+A Nix development shell is provided to fully instantiate the environment with
+all relevant tools and libraries. It can be accessed with:
 
 ```bash
 nix develop
 ```
 
-For the simulator, plotting, and general development.
+### Simulator
 
 ```bash
-nix develop .#inference
+python sim.py --model baseline --p 0.03 --q 0.38 --K 50000 --v 100 --gamma 40 --b0 50000 --sigma-n 5 --N0 10 --C0 2000000 --T 60
 ```
-
-For the inference stack, including the custom `sbi` and `numpyro` derivations.
-
-## Command Line
-
-Run the baseline simulator and print ending summary statistics:
 
 ```bash
-python -m startup_sim --model baseline --p 0.03 --q 0.38 --K 50000 --v 100 --gamma 40 --b0 50000 --sigma-n 5 --N0 10 --C0 2000000 --T 60
+python sim.py --model advanced --p 0.03 --q 0.38 --kappa 1.0 --sigma-q 0.05 --K 50000 --v 100 --epsilon 0.1 --chi 0.02 --gamma 40 --b0 50000 --alpha 200 --sigma-n 5 --N0 10 --C0 2000000 --T 60
 ```
 
-Run the advanced simulator:
+### Inference
 
 ```bash
-python -m startup_sim --model advanced --p 0.03 --q 0.38 --kappa 1.0 --sigma-q 0.05 --K 50000 --v 100 --epsilon 0.1 --chi 0.02 --gamma 40 --b0 50000 --alpha 200 --sigma-n 5 --N0 10 --C0 2000000 --T 60
+python uq.py --method mcmc --model baseline --seed 0
 ```
-
-## Python API
-
-```python
-from startup_sim import (
-    BASELINE_DEFAULT_PARAMS,
-    ADVANCED_DEFAULT_PARAMS,
-    simulate,
-    simulate_advanced,
-    simulate_baseline,
-)
-
-baseline_result = simulate_baseline(**BASELINE_DEFAULT_PARAMS, seed=7)
-advanced_result = simulate_advanced(**ADVANCED_DEFAULT_PARAMS, seed=7)
-same_dispatch = simulate(model="baseline", **BASELINE_DEFAULT_PARAMS, seed=7)
-print(baseline_result["trajectory"][-1])
-print(advanced_result["trajectory"][-1])
-print(same_dispatch["model"])
-```
-
-## Visualization
-
-Static views are available through both matplotlib and Plotly:
 
 ```bash
-python -m startup_sim.plot_demo --model baseline --engine matplotlib
-python -m startup_sim.plot_demo --model advanced --engine plotly
+python uq.py --method snpe --model baseline --seed 0
+python uq.py --method snpe --model advanced --seed 0
 ```
 
-An interactive Plotly/Dash explorer is available for either model:
+### Visualization
 
 ```bash
-python -m startup_sim.interactive_plot --model baseline
-python -m startup_sim.interactive_plot --model advanced
+python plot.py --model baseline
+python plot.py --model advanced
 ```
-
-Additional visualization requirements:
-
-- `matplotlib`
-- `plotly`
-- `dash`
-
-## Inference
-
-Run baseline NUTS evaluation:
 
 ```bash
-python -m startup_sim.infer --method mcmc --model baseline --seed 0
+python plot.py --interactive --model baseline
+python plot.py --interactive --model advanced
 ```
 
-Run SNPE evaluation on either model:
+## AI Usage
 
-```bash
-python -m startup_sim.infer --method snpe --model baseline --seed 0
-python -m startup_sim.infer --method snpe --model advanced --seed 0
-```
+The core models, design decisions, full testing and validation, literature
+review, and all key implementation were completed by humans.
+
+ChatGPT and Claude were used to aid the implementation of the visualization
+tools, including the plotting and interactive web interface. These are
+UI-intensive tasks related to the presentation, not the performance, of the
+models.
+
+AI models were additionally used for research of different model techniques with
+efficiency comparisons and light editing of the repository: primarily inline
+documentation generation (with human review), formatting, unit tests to
+double-check the model(s) logic (again, with review), and API shaping for
+integration with the visualization code.
+
+No additions from AI tools have been made without author approval and
+understanding.

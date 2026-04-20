@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from startup_sim.inference.utils import BASELINE_OBSERVABLES
+from .utils import BASELINE_OBSERVABLES
 
 
 def save_sbc_rank_histograms(ranks: np.ndarray, names: list[str], path: str | Path) -> Path:

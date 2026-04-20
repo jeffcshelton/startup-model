@@ -1,6 +1,4 @@
 from __future__ import annotations
-
-import argparse
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -8,10 +6,10 @@ import numpy as np
 from dash import Dash, Input, Output, dcc, html
 import plotly.graph_objects as go
 
-import startup_sim.advanced as advanced_model
-import startup_sim.baseline as baseline_model
-from startup_sim.model import DEFAULT_MODEL, MODEL_NAMES, get_default_params, normalize_model_name
-from startup_sim.plotting import build_plotly_figure
+from . import advanced as advanced_model
+from . import baseline as baseline_model
+from .model import DEFAULT_MODEL, MODEL_NAMES, get_default_params, normalize_model_name
+from .visualization import build_plotly_figure
 
 
 @dataclass(frozen=True)
@@ -339,14 +337,7 @@ def launch_interactive_explorer(
 
 
 def main() -> None:
-    """Launch the explorer from the command line."""
-
-    parser = argparse.ArgumentParser(description="Interactive explorer for startup_sim.")
-    parser.add_argument("--model", choices=MODEL_NAMES, default=DEFAULT_MODEL)
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8050)
-    args = parser.parse_args()
-    launch_interactive_explorer(model=args.model, host=args.host, port=args.port)
+    raise SystemExit("Use `python plot.py --interactive ...` from the repository root.")
 
 
 if __name__ == "__main__":

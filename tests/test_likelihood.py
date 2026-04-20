@@ -4,8 +4,8 @@ import unittest
 
 import numpy as np
 
-from startup_sim import baseline as baseline_model
-from startup_sim.inference.likelihood import baseline_log_likelihood
+from src import baseline as baseline_model
+from src.inference.likelihood import baseline_log_likelihood
 
 
 class BaselineLikelihoodTests(unittest.TestCase):

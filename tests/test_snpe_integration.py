@@ -6,8 +6,8 @@ from pathlib import Path
 
 import numpy as np
 
-from startup_sim.inference.config import InferenceConfig
-from startup_sim.inference.snpe import train_snpe
+from src.inference.config import InferenceConfig
+from src.inference.snpe import train_snpe
 
 
 def _has_snpe() -> bool:
@@ -23,9 +23,9 @@ def _has_snpe() -> bool:
 class SNPEIntegrationTests(unittest.TestCase):
     def test_reduced_training_has_finite_nonincreasing_loss_signal(self) -> None:
         cfg = InferenceConfig(
-            n_simulations_snpe=500,
-            snpe_epochs=5,
-            outputs_dir=Path(tempfile.mkdtemp()),
+            snpe_sims=500,
+            epochs=5,
+            out_dir=Path(tempfile.mkdtemp()),
         )
         result = train_snpe(model="baseline", cfg=cfg, seed=11, n_simulations=500, max_num_epochs=5)
         self.assertTrue(all(np.isfinite(result.training_losses)))

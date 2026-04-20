@@ -6,9 +6,9 @@ from pathlib import Path
 
 import numpy as np
 
-from startup_sim.baseline import DEFAULT_PARAMS, simulate
-from startup_sim.inference.config import InferenceConfig
-from startup_sim.inference.mcmc import run_baseline_nuts
+from src.baseline import DEFAULT_PARAMS, simulate
+from src.inference.config import InferenceConfig
+from src.inference.mcmc import run_baseline_nuts
 
 
 def _has_numpyro() -> bool:
@@ -27,10 +27,10 @@ class MCMCIntegrationTests(unittest.TestCase):
         params["seed"] = 7
         observed = simulate(**params)
         cfg = InferenceConfig(
-            mcmc_num_warmup=100,
-            mcmc_num_samples=100,
-            mcmc_num_chains=1,
-            outputs_dir=Path(tempfile.mkdtemp()),
+            warmup=100,
+            samples=100,
+            chains=1,
+            out_dir=Path(tempfile.mkdtemp()),
         )
         result = run_baseline_nuts(observed, cfg=cfg, seed=9)
         for value in result.diagnostics.rhat.values():
