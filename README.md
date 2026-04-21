@@ -11,14 +11,35 @@ each.
 
 ### Baseline
 
-This is a Bass-style adoption model with ruin detection.
+This is a Bass-style adoption model with ruin detection. Customer growth follows
+the Bass diffusion equation, a deterministic drift characterized by an adoption rate
+`p` driven by advertising and a spread factor `q` driven by word-of-mouth and
+scaled to the current proportion of the market captured. Cash evolves via a linear
+equation: revenue per customer minus fixed overhead and cost per customer. Each
+time step is advanced using a forward Euler-Maruyama step, which is sufficient for
+this simple model due to the smooth, disjoint nature of the customer count and cash
+evolutions. The simulator stops and records a startup failure time if the cash ever
+reaches 0 at any time step.
 
 ### Advanced
 
 Expansion on the Bass model that add latent virality, churn, and price
-compression.
+compression. The word-of-mouth coefficient `q` now follows a mean-reverting
+(Ornstein-Uhlenbeck) process that captures the nature of periodic low and high
+virality for a product. Customers also now churn at a constant rate proportionate
+to the current customer count of the startup. Revenue per customer also compresses
+as market penetration grows to account for competitive pressures as companies
+gain market share. Also, customer acquisition cost is added to the model.
 
-**TODO:** Full descriptions of models.
+These additions make the dynamics of our system nonlinear and more tightly
+coupled, so simple Euler steps as used in the baseline accumulate too much error.
+Instead, we use an adaptive Runge-Kutta integrator (`scipy.solve_ivp`, RK45).
+We make stochastic corrections for the `q` stochastic process, customer count noise,
+and the resultant cash changes by layering noise on top of the deterministic
+solution (operator splitting). Ruin/startup failure is detected precisely via an
+event function in the RK45 solver used to detect when cash crosses from positive
+to negative.
+
 
 ## Usage
 
